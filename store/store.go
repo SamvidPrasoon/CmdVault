@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -128,4 +129,26 @@ func containsTag(tags []string, query string) bool {
 		}
 	}
 	return false
+}
+
+func (db *DbClient) Ingest(filePath string) (int, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	var cmds []Command
+	if err := json.Unmarshal(data, &cmds); err != nil {
+		return 0, fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	ingested := 0
+	for _, cmd := range cmds {
+		if err := db.Save(cmd); err != nil {
+			return ingested, fmt.Errorf("failed to save command '%s': %w", cmd.Name, err)
+		}
+		ingested++
+	}
+
+	return ingested, nil
 }

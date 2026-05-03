@@ -3,7 +3,6 @@
 > A blazing-fast CLI tool for developers to **save, organize, search, and execute** frequently used shell and infra commands — your personal command vault.
 
 ![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
 
@@ -42,6 +41,7 @@ No cloud. No login. No config. Just a fast local binary.
 | 📦 **Export**        | Export your entire vault to a portable JSON file           |
 | 📥 **Import**        | Import commands from a JSON file (team sharing)            |
 | 📊 **Run tracking**  | Tracks how many times each command has been executed       |
+| ☁️ **S3 backup**     | Upload/download/delete vault backups to AWS S3             |
 
 ---
 
@@ -159,23 +159,54 @@ cmdvault delete port-forward
 cmdvault export my-commands.json
 
 # Import commands from JSON
-cmdvault import my-commands.json
+cmdvault ingest my-commands.json
 ```
 
-**Example export format:**
+---
 
-```json
-[
-  {
-    "id": "1718123456789",
-    "name": "deploy-prod",
-    "cmd": "kubectl apply -f ./k8s/",
-    "description": "Deploy all services to production",
-    "tags": ["k8s", "infra"],
-    "created_at": "2024-06-15T10:30:00Z",
-    "run_count": 12
-  }
-]
+## ☁️ S3 Backup & Restore
+
+Upload and manage your vault backups in AWS S3 for team sharing and disaster recovery.
+
+### Upload to S3
+
+```bash
+cmdvault uploads3 <key> <filepath>
+
+# Example - upload exported commands to S3
+cmdvault uploads3 "commands-backup.json" "./my-commands.json"
+# ✅ Saved 'commands-backup.json'
+```
+
+### Download from S3
+
+```bash
+cmdvault gets3 <key> <filepath>
+
+# Example - download backup and restore locally
+cmdvault gets3 "commands-backup.json" "./downloaded.json"
+cmdvault ingest "./downloaded.json"
+```
+
+### Delete from S3
+
+```bash
+cmdvault deletes3 <key>
+
+# Example
+cmdvault deletes3 "commands-backup.json"
+# ✅ Deleted 'commands-backup.json'
+```
+
+### S3 Configuration
+
+Create a `.env` file in the project root:
+
+```
+AWS_REGION=us-east-1
+AWS_BUCKET=your-bucket-name
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
 ```
 
 ---
@@ -186,15 +217,21 @@ cmdvault import my-commands.json
 cmdvault/
 ├── main.go           # Entry point
 ├── cmd/              # All CLI commands (Cobra)
-│   ├── root.go       # Root command + DB init
+│   ├── root.go       # Root command + DB + S3 init
 │   ├── add.go        # Save a command
 │   ├── run.go        # Execute a command
 │   ├── list.go       # List all commands
 │   ├── search.go     # Search commands
 │   ├── delete.go     # Delete a command
-│   └── export.go     # Export/Import JSON
-└── store/
-    └── store.go      # bbolt DB layer (CRUD)
+│   ├── export.go     # Export to JSON
+│   ├── ingest.go     # Import from JSON
+│   ├── uploadS3.go   # Upload file to S3
+│   ├── getS3.go      # Download file from S3
+│   └── deleteS3.go   # Delete file from S3
+├── store/
+│   └── store.go      # bbolt DB layer (CRUD)
+└── awsS3/
+    └── s3Client.go   # S3 client (upload/download/delete)
 ```
 
 ### Tech Stack
@@ -203,6 +240,7 @@ cmdvault/
 | ----------------------------------------- | ----------------------------------------- |
 | [Cobra](https://github.com/spf13/cobra)   | CLI command structure and flag parsing    |
 | [bbolt](https://github.com/etcd-io/bbolt) | Embedded key-value store (no external DB) |
+| [AWS SDK Go v2](https://github.com/aws/aws-sdk-go-v2) | S3 backup and restore operations |
 
 ### Why bbolt?
 
@@ -250,12 +288,12 @@ cmdvault add git-undo "git reset --soft HEAD~1" --tags git
 
 ## 🛣️ Roadmap
 
-- [ ] `cmdvault import` — Import commands from JSON
 - [ ] `--dry-run` flag on `run` — Preview command before executing
 - [ ] HTTP API mode — Expose vault as local REST API for team sharing
 - [ ] Shell autocomplete — Tab completion for saved command names
 - [ ] `cmdvault edit` — Edit a saved command in-place
 - [ ] Encrypted vault — Optional AES encryption for sensitive commands
+- [ ] `cmdvault sync s3` — One-command sync between local DB and S3 backup
 
 ---
 

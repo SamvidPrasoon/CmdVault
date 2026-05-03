@@ -3,7 +3,6 @@
 > A blazing-fast CLI tool for developers to **save, organize, search, and execute** frequently used shell and infra commands — your personal command vault.
 
 ![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
 
